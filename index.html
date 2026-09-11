@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KisanMarg (કિસાનમાર્ગ) - Smart Gujarat Mandi Intelligence & Net Profit Navigator</title>
+  <meta name="description" content="Kalpvruksh 2.0 Hackathon Problem P22: Eliminate grain market information asymmetry. Compare Gujarat APMC Mandis by True Net Take-Home Profit after logistics, moisture dockage, hamali, and gate wait costs.">
+
+  <!-- Leaflet CSS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- ====================================================================
+         LEFT SIDEBAR NAVIGATION
+         ==================================================================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">🌾</div>
+          <div class="brand-text">
+            <h1>KisanMarg <span class="brand-badge">P22</span></h1>
+            <p class="brand-subtitle" data-i18n="brandSub">Smart Gujarat Mandi Intelligence</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-category">Farmer Dashboard</div>
+        <a class="nav-item" data-view="harvest-finder" id="nav-btn-harvest-finder">
+          <span class="nav-icon">🎯</span>
+          <span>Crop Profit & Distance</span>
+          <span class="nav-badge" style="background:#10b981; color:white;">DASHBOARD</span>
+        </a>
+
+        <div class="nav-category">Market Discovery</div>
+        <a class="nav-item active" data-view="map" id="nav-btn-map">
+          <span class="nav-icon">🗺️</span>
+          <span data-i18n="navMap">Mandi Map Navigator</span>
+          <span class="nav-badge">15 Mandis</span>
+        </a>
+        <a class="nav-item" data-view="calculator" id="nav-btn-calc">
+          <span class="nav-icon">🧮</span>
+          <span data-i18n="navCalc">Net Profit Optimizer</span>
+          <span class="nav-badge" style="background:rgba(16,185,129,0.2); color:#10b981;">P22 Core</span>
+        </a>
+        <a class="nav-item" data-view="dockage" id="nav-btn-dockage">
+          <span class="nav-icon">🌾</span>
+          <span data-i18n="navDockage">Grade & Moisture Cut</span>
+        </a>
+
+        <div class="nav-category">Live Yard Telemetry</div>
+        <a class="nav-item" data-view="queues" id="nav-btn-queues">
+          <span class="nav-icon">⏱️</span>
+          <span data-i18n="navQueues">Live Gate & Queues</span>
+        </a>
+        <a class="nav-item" data-view="trends" id="nav-btn-trends">
+          <span class="nav-icon">📊</span>
+          <span data-i18n="navTrends">Price Trends & MSP</span>
+        </a>
+
+        <div class="nav-category">Empowerment & Liquidity</div>
+        <a class="nav-item" data-view="buyers" id="nav-btn-buyers">
+          <span class="nav-icon">🤝</span>
+          <span data-i18n="navBuyers">Verified Direct Buyers</span>
+        </a>
+        <a class="nav-item" data-view="distress" id="nav-btn-distress">
+          <span class="nav-icon">🚨</span>
+          <span data-i18n="navDistress">Distress Sale Advisor</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="farmer-preset-card">
+          <div class="preset-header">
+            <span data-i18n="farmerBase">Default Hub</span>
+            <span style="color:#10b981;">📍 Gujarat</span>
+          </div>
+          <div class="preset-location">
+            <span>🚜</span>
+            <span>Gondal / Rajkot Rural Belt</span>
+          </div>
+          <div class="unit-info-pill" data-i18n="regionalUnitNote">
+            1 Mann (મણ) = 20 kg | 1 Q = 5 Mann
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="main-wrapper">
+      
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobile-menu-toggle" class="btn btn-outline" style="display:none; padding:6px 10px;">☰</button>
+          <div class="page-title">
+            <h2>KisanMarg: Transparent Grain Market Choices</h2>
+            <p>Solving Kalpvruksh 2.0 Hackathon Problem P22 • Gujarat Mandi Grid</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Farmer Account Chip / Login Button -->
+          <div id="topbar-auth-container"></div>
+
+          <div class="status-pill" title="APMC Spot Data & MSP Benchmarks (2025-26) with Agmarknet API integration capability">
+            <div class="status-dot"></div>
+            <span id="api-status-text">Connected to APMC Grid</span>
+          </div>
+
+          <select class="select-input" id="lang-select" title="Change Interface Language">
+            <option value="en">English (EN)</option>
+            <option value="gu" selected>ગુજરાતી (GU)</option>
+            <option value="hi">हिंदी (HI)</option>
+          </select>
+
+          <button id="theme-toggle-btn" class="btn btn-outline">☀️ Light</button>
+        </div>
+      </header>
+
+      <!-- Dynamic Views Container -->
+      <div class="content-body">
+
+        <!-- ================================================================
+             NEW VIEW: HARVEST SUITABLE PROFIT & MARKET DISTANCE FINDER
+             ================================================================ -->
+        <section id="view-harvest-finder" class="view-panel">
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary);">
+              🌾 My Crop Profit & Market Distance Finder
+            </h2>
+            <p style="font-size: 13px; color: var(--text-muted);">
+              Enter your harvest details to instantly discover the most profitable APMC mandi, exact road distance, and real take-home cash.
+            </p>
+          </div>
+
+          <div class="finder-layout">
+            <!-- Crop Entry Form Card -->
+            <div class="glass-card" style="height: fit-content;">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">
+                📝 Enter Crop Details
+              </h3>
+
+              <div class="form-group">
+                <label class="form-label">Farm Origin Location</label>
+                <select id="finder-location-select" class="select-input" style="width: 100%;"></select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Crop Type</label>
+                <select id="finder-crop-select" class="select-input" style="width: 100%;"></select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Harvest Quantity & Unit</label>
+                <div class="input-row">
+                  <input type="number" id="finder-qty-input" class="text-input" value="100" min="1">
+                  <select id="finder-unit-select" class="select-input">
+                    <option value="quintal" selected>Quintals (100kg)</option>
+                    <option value="mann">Mann / મણ (20kg)</option>
+                    <option value="bag_50kg">Bags (50kg)</option>
+                    <option value="metric_ton">Tons (1,000kg)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Grain Moisture %</span>
+                  <span id="finder-moisture-display" class="slider-val">11.5%</span>
+                </label>
+                <input type="range" id="finder-moisture-slider" class="slider" min="7.0" max="22.0" step="0.5" value="11.5">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  <span>Dry (8%)</span>
+                  <span>FAQ Limit (12%)</span>
+                  <span>High (>16%)</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Transport Vehicle</label>
+                <select id="finder-vehicle-select" class="select-input" style="width: 100%;">
+                  <option value="tractor_trolley" selected>🚜 Tractor Trolley (Local • ₹35/km)</option>
+                  <option value="pickup_truck">🛻 Pickup / Bolero (Fast • ₹28/km)</option>
+                  <option value="medium_truck_6w">🚚 6-Wheeler Lorry (Bulk • ₹55/km)</option>
+                  <option value="heavy_truck_10w">🚛 10-Wheeler Multi-Axle (₹75/km)</option>
+                </select>
+              </div>
+
+              <button id="finder-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px 0; font-size: 14px;">
+                🚀 Calculate Suitable Profit & Distance
+              </button>
+            </div>
+
+            <!-- Dynamic Results Presentation -->
+            <div id="finder-results-container">
+              <!-- Dynamically populated by HarvestFinderComponent -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 1: MANDI MAP NAVIGATOR
+             ================================================================ -->
+        <section id="view-map" class="view-panel active">
+          <div class="map-view-container">
+            
+            <!-- Map Card -->
+            <div class="map-card">
+              <div class="map-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <strong style="font-size: 14px;">📍 Gujarat APMC Mandis Map</strong>
+                  <span style="font-size: 11px; color: var(--text-muted);">Pins show nearby yards, distance & live congestion</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block;"></span> Optimal Profit
+                  </span>
+                  <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> Moderate
+                  </span>
+                  <span style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span> Heavy Queue
+                  </span>
+                </div>
+              </div>
+              <div id="leaflet-map"></div>
+            </div>
+
+            <!-- Map Controls & Mandi List Sidebar -->
+            <div class="map-sidebar-pane">
+              <div class="glass-card radius-control">
+                <div class="radius-slider-header">
+                  <span>Search Radius (from Farm)</span>
+                  <span id="map-radius-val" class="slider-val">75 km</span>
+                </div>
+                <input type="range" id="map-radius-slider" class="slider" min="15" max="250" step="5" value="75">
+              </div>
+
+              <div class="glass-card" style="padding: 12px 16px;">
+                <input type="text" id="map-search-input" class="text-input" placeholder="🔍 Search mandi (e.g. Gondal, Unjha)..." style="width: 100%; margin-bottom: 10px;">
+                <select id="map-district-filter" class="select-input" style="width: 100%;">
+                  <option value="ALL">All Gujarat Districts</option>
+                </select>
+              </div>
+
+              <div id="map-mandis-list" style="flex: 1; overflow-y: auto;">
+                <!-- Dynamically populated mandi cards -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: NET PROFIT OPTIMIZER (PROBLEM P22 CORE)
+             ================================================================ -->
+        <section id="view-calculator" class="view-panel">
+          <div class="calc-container">
+            
+            <!-- Left Parameter Controls -->
+            <div class="glass-card">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">
+                🌾 Harvest & Logistics Parameters
+              </h3>
+
+              <div class="form-group">
+                <label class="form-label">Selected Crop</label>
+                <select id="calc-crop-select" class="select-input" style="width: 100%;"></select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Harvest Quantity & Unit</label>
+                <div class="input-row">
+                  <input type="number" id="calc-quantity" class="text-input" value="100" min="1" step="1">
+                  <select id="calc-unit-select" class="select-input">
+                    <option value="quintal" selected>Quintals (100kg)</option>
+                    <option value="mann">Mann / મણ (20kg)</option>
+                    <option value="bag_50kg">Bags (50kg)</option>
+                    <option value="metric_ton">Tons (1,000kg)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Actual Grain Moisture</span>
+                  <span id="calc-moisture-val" class="slider-val">11.5%</span>
+                </label>
+                <input type="range" id="calc-moisture-slider" class="slider" min="6.0" max="22.0" step="0.5" value="11.5">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:2px;">
+                  <span>Dry (8%)</span>
+                  <span>APMC FAQ (12%)</span>
+                  <span>Wet (>16% Cut)</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Foreign Matter / Chaff %</span>
+                  <span id="calc-foreign-val" class="slider-val">1.0%</span>
+                </label>
+                <input type="range" id="calc-foreign-slider" class="slider" min="0.0" max="8.0" step="0.5" value="1.0">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Transport Vehicle Type</label>
+                <select id="calc-vehicle-select" class="select-input" style="width: 100%;">
+                  <option value="tractor_trolley" selected>🚜 Tractor Trolley (Local / 28 km/h • ₹35/km)</option>
+                  <option value="pickup_truck">🛻 Pickup / Bolero (Fast / 45 km/h • ₹28/km)</option>
+                  <option value="medium_truck_6w">🚚 6-Wheeler Lorry (Bulk / 40 km/h • ₹55/km)</option>
+                  <option value="heavy_truck_10w">🚛 Multi-Axle 10-Wheeler (Heavy / ₹75/km)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Search Distance Radius</span>
+                  <span id="calc-radius-val" class="slider-val">150 km</span>
+                </label>
+                <input type="range" id="calc-radius-slider" class="slider" min="20" max="250" step="10" value="150">
+              </div>
+
+              <div class="form-group" style="margin-top: 14px; background: var(--bg-input); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="calc-fpo-bypass" style="accent-color: #10b981; width: 16px; height: 16px;">
+                  <span>Direct FPO / Corporate Sale (0% Commission)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Right Comparison Matrix & Diagnostics -->
+            <div>
+              <!-- Educational Alert Banner -->
+              <div id="calc-alert-banner" class="banner-alert banner-warning" style="display: none;"></div>
+
+              <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                  <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
+                    🏆 Real Take-Home Profit Ranking Matrix
+                  </h3>
+                  <span style="font-size: 12px; color: var(--text-muted);">Ranked strictly by Cash in Hand</span>
+                </div>
+
+                <div style="overflow-x: auto;">
+                  <table class="matrix-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>APMC Mandi Yard</th>
+                        <th>Quoted Gross Price</th>
+                        <th>Distance & Freight</th>
+                        <th>Moisture Cut</th>
+                        <th>APMC Fees & Wait</th>
+                        <th>Real Take-Home Cash</th>
+                        <th>Net Realized Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody id="calc-matrix-tbody">
+                      <!-- Dynamically rendered rows -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: GRADE & MOISTURE DOCKAGE
+             ================================================================ -->
+        <section id="view-dockage" class="view-panel">
+          <div class="glass-card" style="margin-bottom: 20px;">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">APMC FAQ Moisture & Grade Dockage Calculator</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px;">
+              Grain markets publish price benchmarks based on Fair Average Quality (FAQ). 
+              If your grain arrives with excess moisture, auctioneers deduct weight (dockage) or outright reject your load at the gate.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+              <div>
+                <label class="form-label">Crop</label>
+                <select id="dockage-crop-select" class="select-input" style="width: 100%;"></select>
+              </div>
+              <div>
+                <label class="form-label">Measured Moisture %</label>
+                <input type="number" id="dockage-moisture-input" class="text-input" value="14.0" step="0.5" style="width: 100%;">
+              </div>
+              <div>
+                <label class="form-label">Total Quantity (Quintals)</label>
+                <input type="number" id="dockage-qty-input" class="text-input" value="100" style="width: 100%;">
+              </div>
+            </div>
+
+            <div id="dockage-results-area"></div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: LIVE GATE & QUEUES
+             ================================================================ -->
+        <section id="view-queues" class="view-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">Gujarat APMC Live Gate Telemetry</h2>
+              <p style="font-size: 13px; color: var(--text-muted);">Real-time truck queues and estimated unloading turnaround times</p>
+            </div>
+            <button class="btn btn-outline" onclick="window.QueueTrackerComponent.init()">🔄 Refresh Queues</button>
+          </div>
+
+          <div id="queues-cards-container" class="queues-grid">
+            <!-- Dynamically populated queue cards -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 5: PRICE TRENDS & MSP
+             ================================================================ -->
+        <section id="view-trends" class="view-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">Price Trajectory & Government MSP Signals</h2>
+              <p style="font-size: 13px; color: var(--text-muted);">14-Day Modal price movements across Gujarat APMCs vs Central MSP floor</p>
+            </div>
+            <div style="width: 260px;">
+              <select id="trends-crop-select" class="select-input" style="width: 100%;"></select>
+            </div>
+          </div>
+
+          <div id="trends-content-area">
+            <!-- Dynamically rendered trends -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 6: VERIFIED DIRECT BUYERS & FPOS
+             ================================================================ -->
+        <section id="view-buyers" class="view-panel">
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">Verified Direct Procurement Directory</h2>
+            <p style="font-size: 13px; color: var(--text-muted);">Bypass APMC middleman commission by selling directly to licensed oil millers, spice exporters, and FPOs</p>
+          </div>
+
+          <div id="buyers-content-area">
+            <!-- Dynamically populated buyers -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 7: DISTRESS SALE ADVISOR
+             ================================================================ -->
+        <section id="view-distress" class="view-panel">
+          <div style="margin-bottom: 20px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">Distress Sale vs Warehouse Receipt (e-NWR) Financing</h2>
+            <p style="font-size: 13px; color: var(--text-muted);">Urgent cash need decision matrix: Avoid 20% distress cuts through Government WDRA accredited pledge loans</p>
+          </div>
+
+          <div id="distress-content-area">
+            <!-- Dynamically rendered distress advisor -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ====================================================================
+       AUTHENTICATION MODAL
+       ==================================================================== -->
+  <div id="auth-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🌾</span>
+          <h3 style="font-size: 18px; font-weight: 700; margin: 0;">Farmer Sign-In & Profile</h3>
+        </div>
+        <button id="auth-modal-close" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #10b981;">
+          ⚡ 1-Click Quick Demo Login (Gujarat Farmers)
+        </h4>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Select a pre-configured profile to immediately simulate personalized farm location and crops:
+        </p>
+
+        <div class="demo-profile-list">
+          <div class="demo-farmer-btn" data-demo-id="farmer_01">
+            <div>
+              <strong style="color: #10b981; font-size: 14px;">👨‍🌾 Ramesh Patel</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Gondal Rural, Rajkot District</div>
+              <div style="font-size: 11px; color: var(--accent-gold); margin-top: 2px;">Crops: Groundnut, Wheat, Cotton</div>
+            </div>
+            <span class="btn btn-primary" style="font-size: 11px; padding: 4px 10px;">Select ➔</span>
+          </div>
+
+          <div class="demo-farmer-btn" data-demo-id="farmer_02">
+            <div>
+              <strong style="color: #0ea5e9; font-size: 14px;">👨‍🌾 Hasmukh Prajapati</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Unjha Ganj, Mehsana District</div>
+              <div style="font-size: 11px; color: var(--accent-gold); margin-top: 2px;">Crops: Cumin (Jeera), Mustard</div>
+            </div>
+            <span class="btn btn-primary" style="font-size: 11px; padding: 4px 10px;">Select ➔</span>
+          </div>
+
+          <div class="demo-farmer-btn" data-demo-id="farmer_03">
+            <div>
+              <strong style="color: #8b5cf6; font-size: 14px;">👨‍🌾 Devendra Ahir</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Amreli Rural, Amreli District</div>
+              <div style="font-size: 11px; color: var(--accent-gold); margin-top: 2px;">Crops: Cotton, Sesame, Groundnut</div>
+            </div>
+            <span class="btn btn-primary" style="font-size: 11px; padding: 4px 10px;">Select ➔</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin: 18px 0 14px; position: relative;">
+          <hr style="border: 0; border-top: 1px solid var(--border-color);">
+          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-card); padding: 0 10px; font-size: 11px; color: var(--text-muted);">OR SIGN IN MANUALLY</span>
+        </div>
+
+        <form id="custom-login-form">
+          <div class="form-group">
+            <label class="form-label">Farmer Full Name</label>
+            <input type="text" id="login-name-input" class="text-input" placeholder="e.g. Bharatbhai Desai" required style="width: 100%;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Mobile Number</label>
+            <input type="tel" id="login-phone-input" class="text-input" placeholder="10-digit mobile number" required style="width: 100%;">
+          </div>
+
+          <div class="input-row" style="margin-bottom: 16px;">
+            <div>
+              <label class="form-label">Village / Taluka</label>
+              <input type="text" id="login-village-input" class="text-input" placeholder="Village name" required style="width: 100%;">
+            </div>
+            <div>
+              <label class="form-label">District</label>
+              <select id="login-district-select" class="select-input" style="width: 100%;">
+                <option value="Rajkot">Rajkot</option>
+                <option value="Mehsana">Mehsana</option>
+                <option value="Amreli">Amreli</option>
+                <option value="Junagadh">Junagadh</option>
+                <option value="Banaskantha">Banaskantha</option>
+                <option value="Morbi">Morbi</option>
+                <option value="Botad">Botad</option>
+                <option value="Sabarkantha">Sabarkantha</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px 0; font-size: 13px;">
+            ✅ Save Profile & Enter Dashboard
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet Map JS Library -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Frontend API Client & Fallback Bundler -->
+  <script src="./api_client.js"></script>
+
+  <!-- Modular Components -->
+  <script src="./components/auth.js"></script>
+  <script src="./components/sidebar.js"></script>
+  <script src="./components/map.js"></script>
+  <script src="./components/profit_calculator.js"></script>
+  <script src="./components/harvest_finder.js"></script>
+  <script src="./components/queue_tracker.js"></script>
+  <script src="./components/trends_view.js"></script>
+  <script src="./components/distress_advisor.js"></script>
+
+  <!-- Main Controller -->
+  <script src="./app.js"></script>
+</body>
+</html>
