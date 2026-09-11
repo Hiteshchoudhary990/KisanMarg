@@ -1,0 +1,114 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "KisanMarg - AgriTech Market Intelligence API",
+    "description": "API addressing Kalpvruksh 2.0 Hackathon Problem P22: Limited Visibility Into Profitable Grain Market Choices. Computes True Net Take-Home Profit after logistics, hamali, mandi fees, and moisture dockage.",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://kisanmarg.vercel.app",
+      "description": "Vercel Production Deployment"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "System Health Check",
+        "responses": {
+          "200": {
+            "description": "Service status"
+          }
+        }
+      }
+    },
+    "/api/mandis": {
+      "get": {
+        "summary": "List all registered APMC mandis",
+        "parameters": [
+          {
+            "name": "district",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by Gujarat district (e.g., Rajkot, Mehsana)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of mandis" }
+        }
+      }
+    },
+    "/api/crops": {
+      "get": {
+        "summary": "List all supported crops with APMC FAQ moisture and grade standards",
+        "responses": {
+          "200": { "description": "List of crops" }
+        }
+      }
+    },
+    "/api/calculate-net-profit": {
+      "post": {
+        "summary": "Calculate True Net Take-Home Profit across all Mandis",
+        "description": "Primary engine solving Problem P22. Subtracts transit freight, hamali, APMC cess, commission, gate wait loss, and moisture dockage from quoted prices.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["crop_id", "gross_quantity"],
+                "properties": {
+                  "crop_id": { "type": "string", "example": "CROP-GND" },
+                  "gross_quantity": { "type": "number", "example": 50.0 },
+                  "unit": { "type": "string", "enum": ["quintal", "mann", "bag_50kg", "metric_ton"], "default": "quintal" },
+                  "farmer_lat": { "type": "number", "default": 22.0500 },
+                  "farmer_lng": { "type": "number", "default": 70.8200 },
+                  "actual_moisture_pct": { "type": "number", "default": 12.0 },
+                  "foreign_matter_pct": { "type": "number", "default": 1.0 },
+                  "vehicle_type": { "type": "string", "enum": ["tractor_trolley", "pickup_truck", "medium_truck_6w", "heavy_truck_10w"], "default": "tractor_trolley" },
+                  "bypass_commission": { "type": "boolean", "default": false },
+                  "max_radius_km": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ranked Mandi Profit Breakdown" }
+        }
+      }
+    },
+    "/api/trends/{mandi_id}/{crop_id}": {
+      "get": {
+        "summary": "14-Day Price Trend and MSP Benchmark",
+        "parameters": [
+          { "name": "mandi_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "crop_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Historical price points" }
+        }
+      }
+    },
+    "/api/queues": {
+      "get": {
+        "summary": "Live Mandi Gate Congestion and Queue Turnaround",
+        "responses": {
+          "200": { "description": "Gate queue telemetry" }
+        }
+      }
+    },
+    "/api/warehouses": {
+      "get": {
+        "summary": "WDRA Accredited Warehouses for Distress-Sale Mitigation",
+        "responses": {
+          "200": { "description": "Warehouse and pledge loan details" }
+        }
+      }
+    }
+  }
+}
